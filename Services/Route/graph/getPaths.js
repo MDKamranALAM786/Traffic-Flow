@@ -31,11 +31,30 @@ export const projectGraph = async (session) => {
     }
 };
 
-export const getRoute = async (src, dest, session) => {
+export const getRoute = async (lat1, long1, lat2, long2, session) => {
     try {
         await projectGraph(session);
+
+        const ids = await session.run(`
+            MATCH (src:Intersection {lat:$lat1, lon:$long1})
+            MATCH (dest:Intersection {lat:$lat2, lon:$long2})
+            RETURN src.id AS id1, dest.id AS id2`,
+            {
+                lat1 : Number(lat1),
+                long1 : Number(long1),
+                lat2 : Number(lat2),
+                long2 : Number(long2)
+            }
+        );
+        let id1 = ids.records[0].get("id1");
+        let id2 = ids.records[0].get("id2");
+
+        console.log(id1);
+        console.log(id2);
+
         const result = await session.run(`
-            MATCH (source:Intersection {name:$src}), (destination:Intersection {name:$dest})
+            MATCH (source:Intersection {id:$src})
+            MATCH (destination:Intersection {id:$dest})
 
             CALL gds.shortestPath.dijkstra.stream("roadGraph", {
                 sourceNode : source,
@@ -45,8 +64,10 @@ export const getRoute = async (src, dest, session) => {
             YIELD totalCost, nodeIds
 
             RETURN totalCost, nodeIds;`,
-            {src : src, dest : dest}
+            {src : id1, dest : id2}
         );
+        console.log("Result");
+        console.log(result);
         
         let record = result.records[0];
         if(!record) {
@@ -61,14 +82,14 @@ export const getRoute = async (src, dest, session) => {
             UNWIND $nodeIds AS id
             MATCH (n:Intersection)
             WHERE id(n) = id
-            RETURN n.name AS name`,
+            RETURN n.id AS id`,
             {nodeIds : nodeIds}
         );
         let names = pathResult.records;
 
         let nodes = [];
         names.forEach((name) => {
-            nodes.push(name.get("name"));
+            nodes.push(name.get("id"));
         });
 
         let shortestPath = {

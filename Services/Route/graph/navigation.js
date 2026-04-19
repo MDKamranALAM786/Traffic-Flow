@@ -2,11 +2,11 @@ import driver from "../config/connect.js";
 
 import {getRoute} from "./getPaths.js";
 
-export const navigate = async (src, dest) => {
+export const navigate = async (lat1, long1, lat2, long2) => {
     const session = driver.session({database : "routing-project"});
 
     try {
-        let shortestPath = await getRoute(src, dest, session);
+        let shortestPath = await getRoute(lat1, long1, lat2, long2, session);
 
         if(!shortestPath) {
             console.log("No Route Found");
@@ -22,7 +22,7 @@ export const navigate = async (src, dest) => {
             let to = route[i];
 
             const result = await session.run(`
-                    MATCH (start:Intersection {name:$start})-[r:ROAD]->(end:Intersection {name:$end})
+                    MATCH (start:Intersection {id:$start})-[r:ROAD]->(end:Intersection {id:$end})
                     WITH r.type AS type, r.distance AS distance, r.travel_time AS time
                     RETURN *
                 `,
@@ -42,7 +42,13 @@ export const navigate = async (src, dest) => {
                 instruction = `Go via street from ${from} to ${to}`;
             }
 
-            let path = {from, to, instruction, distance, time};
+            let path = {
+                from,
+                to,
+                instruction,
+                distance : `${distance}Km`,
+                time : `${time}min`
+            };
             steps.push(path);
 
             from = to;

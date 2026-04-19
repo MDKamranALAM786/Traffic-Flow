@@ -4,12 +4,12 @@ import {navigate} from "../graph/navigation.js";
 
 export const getRouteHandler = async (req, res) => {
     try {
-        let {src, dest} = req.query;
-        if(!src || !dest) {
+        let {lat1, long1, lat2, long2} = req.query;
+        if(!lat1 || !long1 || !lat2 || !long2) {
             return(res.status(httpStatus.BAD_REQUEST).json({message : "Missing Source/Destination"}));
         }
 
-        let path = await navigate(src, dest);
+        let path = await navigate(lat1, long1, lat2, long2);
         if(!path) {
             return(res.status(httpStatus.NOT_FOUND).json({message : "No Route Found"}));
         } else {
