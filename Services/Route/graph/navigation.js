@@ -19,16 +19,19 @@ export const navigate = async (lat1, long1, lat2, long2) => {
         let {route, totalTime} = shortestPath;
 
         let steps = [];
-        let from = route[0];
 
         for(let i=1;i<route.length;i++) {
+            let from = route[i-1];
             let to = route[i];
 
             const result = await session.run(`
                 MATCH (start:Intersection {id:$start})-[r:ROAD]->(end:Intersection {id:$end})
                 WITH r.type AS type, r.distance AS distance, r.travel_time AS time
                 RETURN *`,
-                {start : from, end : to}
+                {
+                    start : from.id,
+                    end : to.id
+                }
             );
 
             let distance = Number(result.records[0].get("distance"));
@@ -52,8 +55,6 @@ export const navigate = async (lat1, long1, lat2, long2) => {
                 time : `${time}min`
             };
             steps.push(path);
-
-            from = to;
         }
 
         let finalPath = {route, steps, totalTime};
