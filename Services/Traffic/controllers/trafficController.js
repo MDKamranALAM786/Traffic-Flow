@@ -7,9 +7,9 @@ export const changeTrafficHandler = async (req, res) => {
         let {lat, long} = req.body;
 
         // let {hasChanged, message} = await changeTraffic(src, dest, newTime);
-        const data = await updateRealTrafficData(Number(lat), Number(long));
-        if(data) {
-            return(res.status(httpStatus.OK).json(data));
+        const {hasChanged, message} = await updateRealTrafficData(Number(lat), Number(long));
+        if(hasChanged) {
+            return(res.status(httpStatus.OK).json({message : message}));
         } else {
             return(res.status(httpStatus.NOT_FOUND).json({message : message}));
         }

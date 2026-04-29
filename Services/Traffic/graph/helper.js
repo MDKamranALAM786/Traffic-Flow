@@ -1,5 +1,5 @@
 export const getBoundaryPoints = (lat, long) => {
-    const radius = 1000;
+    const radius = 500;
     const lat_origin_rad = lat * (Math.PI / 180);
 
     let boundaryPoints = [];
