@@ -74,4 +74,4 @@ const startSimulation = async () => {
 };
 
 await start();
-await startSimulation();
+// await startSimulation();

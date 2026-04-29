@@ -1,4 +1,8 @@
 import driver from "../config/connect.js";
+import axios from "axios";
+
+import {getNodesInPairs} from "./callNeo4j.js";
+import {getDataPoints} from "./helper.js";
 
 export const changeTraffic = async (src, dest, newTime) => {
     let session = driver.session({database : "routing-project"});
@@ -84,5 +88,42 @@ export const updateAllTraffic = async (congestionLevels) => {
         });
     } finally {
         await session.close();
+    }
+};
+
+export const updateRealTrafficData = async (lat, long) => {
+    const session = driver.session({database : "routing-project"});
+
+    try {
+        const coord = await getDataPoints(lat, long, session);
+        lat = coord.lat;
+        long = coord.long;
+
+        const boundaryPoints = await getNodesInPairs(lat, long, session);
+        console.log(`Total Boundary Points : ${boundaryPoints.length}`);
+        const ROUTE_SERVICE = process.env.ROUTE_SERVICE_URL;
+
+        // let data = {};
+        
+        for(let point of boundaryPoints) {
+            let targetURL = `${ROUTE_SERVICE}?lat1=${lat}&long1=${long}&lat2=${point.lat}&long2=${point.long}`;
+            const result = await axios.get(targetURL);
+            const pathData = result.data.path.route;
+
+            console.log(`Total Intersections in this route : ${pathData.length}`);
+            console.log(pathData);
+
+            // for(let i=1;i<pathData.length;i++) {
+            //     let start = pathData[i-1];
+            //     let end = pathData[i];
+            // }
+
+            break;
+        }
+
+        return(data);
+    } catch(err) {
+        console.log("Some Error in updating real time traffic data");
+        throw(err);
     }
 };
