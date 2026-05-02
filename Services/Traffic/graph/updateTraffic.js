@@ -151,10 +151,10 @@ export const updateRealTrafficData = async (lat, long) => {
         let response = {};
         if(totalUpdates !== 0) {
             response.hasChanged = true;
-            response.message = "Traffic aware Travel Time successfull";
+            response.message = "Traffic aware Travel Time updation successfull";
         } else {
             response.hasChanged = false;
-            response.message = "Traffic aware Travel Time unsuccessfull";
+            response.message = "Traffic aware Travel Time updation unsuccessfull";
         }
 
         return(response);

@@ -31,10 +31,10 @@ export const getNeighbours = async (lat, long, session) => {
     try {
         const result = await session.run(`
             MATCH (node1:Intersection)-[r:ROAD]->(node2:Intersection)
-            WHERE node1.lat > $lat-0.0045 AND node1.lat < $lat+0.0045
-              AND node1.lon > $long-0.0045 AND node1.lon < $long+0.0045
-            AND node1.lat > $lat-0.0045 AND node1.lat < $lat+0.0045
-              AND node1.lon > $long-0.0045 AND node1.lon < $long+0.0045
+            WHERE node1.lat > $lat-0.005 AND node1.lat < $lat+0.005
+              AND node1.lon > $long-0.005 AND node1.lon < $long+0.005
+            AND node2.lat > $lat-0.005 AND node2.lat < $lat+0.005
+              AND node2.lon > $long-0.005 AND node2.lon < $long+0.005
             RETURN node1.id AS id1, node1.lat AS lat1, node1.lon AS lon1,
                    node2.id AS id2, node2.lat AS lat2, node2.lon AS lon2`,
             {
