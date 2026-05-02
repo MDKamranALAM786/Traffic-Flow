@@ -1,9 +1,9 @@
 import driver from "../config/connect.js";
 import axios from "axios";
 
-import {getNodesInPairs} from "./callNeo4j.js";
+import {getDataPoints, getNeighbours, addNewTraffic} from "./callNeo4j.js";
 import {getRealTravelTime} from "./callMapBox.js";
-import {getDataPoints} from "./helper.js";
+import {sleep} from "./helper.js";
 
 export const changeTraffic = async (src, dest, newTime) => {
     let session = driver.session({database : "routing-project"});
@@ -100,66 +100,68 @@ export const updateRealTrafficData = async (lat, long) => {
         lat = coord.lat;
         long = coord.long;
 
-        const boundaryPoints = await getNodesInPairs(lat, long, session);
-        console.log(`Total Boundary Points : ${boundaryPoints.length}`);
-        const ROUTE_SERVICE = process.env.ROUTE_SERVICE_URL;
+        const neighbourPairs = await getNeighbours(lat, long, session);
+        console.log(`Total edges within boundary from curr location : ${neighbourPairs.length}`);
 
-        let count = 0;
-        
-        for(let point of boundaryPoints) {
-            let targetURL = `${ROUTE_SERVICE}?lat1=${lat}&long1=${long}&lat2=${point.lat}&long2=${point.long}`;
-            let route = await axios.get(targetURL);
-            let pathData = route.data.path.route;
+        let unprocessedEdges = new Set();
+        for(let i=0;i<neighbourPairs.length;i++) {
+            unprocessedEdges.add(i);
+        }
 
-            console.log(`Total Intersections in this route : ${pathData.length}`);
-            console.log(pathData);
+        let processedEdges = new Set();
+        let nodes = new Map();
 
-            for(let i=1;i<pathData.length;i++) {
-                let node1 = pathData[i-1];
-                let node2 = pathData[i];
-                let {duration, distance} = await getRealTravelTime(node1, node2);
+        let newTravelTimes = [];
+        let chunkCount = 0;
 
-                const result = await session.run(`
-                    MATCH (node1:Intersection {lat:$lat1, lon:$long1})
-                    MATCH (node2:Intersection {lat:$lat2, lon:$long2})
-                    MATCH (node1)-[r:ROAD]->(node2)
-                    WITH r
-                    SET r.distance = $dist, r.travel_time = $duration
-                    RETURN COUNT(r) AS count`,
-                    {
-                        lat1 : node1.lat,
-                        long1 : node1.long,
-                        lat2 : node2.lat,
-                        long2 : node2.long,
-                        duration : duration,
-                        dist : distance
-                    }
-                );
+        while(unprocessedEdges.size !== 0) {
+            console.log(`Processing chunk ${++chunkCount}`);
+            // pick 10 unique nodes
+            for(let edge of unprocessedEdges) {
+                let {node1, node2} = neighbourPairs[edge];
 
-                let count = result.records[0].get("count").toNumber();
-                if(!count || count === 0) {
-                    console.log("Some problem occured while updating real travel time");
-                    console.log(count);
+                const hasNode1 = nodes.has(node1.id);
+                const hasNode2 = nodes.has(node2.id);
+
+                const slotsNeeded = (hasNode1 ? 0 : 1) + (hasNode2 ? 0 : 1);
+                if(nodes.size + slotsNeeded <= 10) {
+                    if(!hasNode1) nodes.set(node1.id, node1);
+                    if(!hasNode2) nodes.set(node2.id, node2);
+                    processedEdges.add(edge);
                 }
             }
 
-            console.log("Updation Done for point");
-            console.log(point);
-            console.log(++count);
-        }
+            newTravelTimes = await getRealTravelTime(neighbourPairs, processedEdges, nodes, newTravelTimes);
 
-        let data = {};
-        if(count === 360) {
-            data.hasChanged = true;
-            data.message = "All Roads Travel Time updated Successfully with Real Data";
+            await sleep(1000);
+
+            // remove the processed edges for the remaining edges to be processed
+            for(let edge of processedEdges) {
+                unprocessedEdges.delete(edge);
+            }
+
+            // remove all processed edges and nodes for next fresh data
+            processedEdges.clear();
+            nodes.clear();
+        }
+        console.log(`Total Chunks : ${chunkCount}`);
+        console.log(newTravelTimes);
+
+        const totalUpdates = await addNewTraffic(newTravelTimes, session);
+        let response = {};
+        if(totalUpdates !== 0) {
+            response.hasChanged = true;
+            response.message = "Traffic aware Travel Time successfull";
         } else {
-            data.hasChanged = false;
-            data.message = "Not All Roads Travel Time updated";
+            response.hasChanged = false;
+            response.message = "Traffic aware Travel Time unsuccessfull";
         }
 
-        return(data);
+        return(response);
     } catch(err) {
-        console.log("Some Error in updating real time traffic data");
+        console.log("Some Error in updating real traffic data");
         throw(err);
+    } finally {
+        await session.close();
     }
 };

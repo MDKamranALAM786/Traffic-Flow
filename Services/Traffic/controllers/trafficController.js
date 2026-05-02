@@ -6,7 +6,10 @@ export const changeTrafficHandler = async (req, res) => {
     try {
         let {lat, long} = req.body;
 
-        // let {hasChanged, message} = await changeTraffic(src, dest, newTime);
+        if(!lat || !long) {
+            return(res.status(httpStatus.BAD_REQUEST).json({message : "Latitude and Longitude are required"}));
+        }
+
         const {hasChanged, message} = await updateRealTrafficData(Number(lat), Number(long));
         if(hasChanged) {
             return(res.status(httpStatus.OK).json({message : message}));
