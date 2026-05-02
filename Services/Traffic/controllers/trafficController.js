@@ -1,6 +1,6 @@
 import httpStatus from "http-status";
 
-import {changeTraffic, updateRealTrafficData} from "../graph/updateTraffic.js";
+import {updateRealTrafficData} from "../graph/updateTraffic.js";
 
 export const changeTrafficHandler = async (req, res) => {
     try {
