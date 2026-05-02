@@ -1,22 +1,23 @@
 import httpStatus from "http-status";
 
-import {changeTraffic} from "../graph/updateTraffic.js";
+import {updateRealTrafficData} from "../graph/updateTraffic.js";
 
 export const changeTrafficHandler = async (req, res) => {
     try {
-        let {src, dest, newTime} = req.body;
-        if(!src || !dest || !newTime) {
-            return(res.status(httpStatus.BAD_REQUEST).json({message : "Missing Data"}));
+        let {lat, long} = req.body;
+
+        if(!lat || !long) {
+            return(res.status(httpStatus.BAD_REQUEST).json({message : "Latitude and Longitude are required"}));
         }
 
-        let {hasChanged, message} = await changeTraffic(src, dest, newTime);
+        const {hasChanged, message} = await updateRealTrafficData(Number(lat), Number(long));
         if(hasChanged) {
             return(res.status(httpStatus.OK).json({message : message}));
         } else {
             return(res.status(httpStatus.NOT_FOUND).json({message : message}));
         }
     } catch(err) {
-        console.log(`Error : ${err.cause}`);
+        console.log(`Error : ${err}`);
         return(res.status(httpStatus.INTERNAL_SERVER_ERROR).json({message : err.message}));
     }
 };
