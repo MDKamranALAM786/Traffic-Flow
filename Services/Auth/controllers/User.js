@@ -31,7 +31,14 @@ export const registerUser = async (req, res) => {
         });
         let result = await newUser.save();
         console.log(`Registered User : ${result}`);
-        res.status(httpStatus.CREATED).json({message : "User Registered"});
+
+        const secret = process.env.JWT_SECRET;
+        let token = jwt.sign(
+            {userId : newUser._id},
+            secret,
+            {expiresIn : "1h"}
+        );
+        res.status(httpStatus.CREATED).json({message : "User Registered", token : token});
     } catch(err) {
         res.status(httpStatus.INTERNAL_SERVER_ERROR).json({message : err.message});
     }
