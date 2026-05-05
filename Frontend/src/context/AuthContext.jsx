@@ -6,7 +6,7 @@ export const AuthContext = createContext({});
 
 const BASE_URL = import.meta.env.GATEWAY_URL;
 const client = axios.create({
-    baseURL : BASE_URL
+    baseURL : `${BASE_URL}/auth`
 });
 
 export const AuthProvider = ({children}) => {
