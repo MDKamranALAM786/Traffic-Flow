@@ -50,11 +50,12 @@ export const loginUser = async (req, res) => {
             return(res.status(httpStatus.NOT_FOUND).json({message : "User Not Found"}));
         }
 
+        const secret = process.env.JWT_SECRET;
         let pass = await bcrypt.compare(password, user.password);
         if(pass) {
             let token = jwt.sign(
                 {userId : user._id},
-                process.env.JWT_SECRET,
+                secret,
                 {expiresIn : "1h"}
             );
             return(res.status(httpStatus.OK).json({message : "Login Successful", token : token}));
