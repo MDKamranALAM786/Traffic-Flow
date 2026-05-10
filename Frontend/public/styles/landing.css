@@ -36,11 +36,13 @@
     right: -10%;
     width: 35vw;
     height: 35vw;
-    background: rgba(139, 92, 246, 0.15); /* Subtle purple */
+    background: rgba(139, 92, 246, 0.15);
+    /* Subtle purple */
 }
 
 /* Ensure content stays above the decorative blurs */
-.navbar, .landing-content {
+.navbar,
+.landing-content {
     z-index: 1;
     position: relative;
 }
@@ -93,7 +95,8 @@
 }
 
 .nav-title .flow {
-    color: #3b82f6; /* Bright blue */
+    color: #3b82f6;
+    /* Bright blue */
     text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
@@ -226,9 +229,11 @@
     0% {
         transform: translateY(0px);
     }
+
     50% {
         transform: translateY(-20px);
     }
+
     100% {
         transform: translateY(0px);
     }
@@ -239,6 +244,7 @@
         opacity: 0;
         transform: translateY(30px);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0);
@@ -250,6 +256,7 @@
         opacity: 0;
         transform: translateX(40px);
     }
+
     100% {
         opacity: 1;
         transform: translateX(0);
@@ -263,15 +270,15 @@
         text-align: center;
         gap: 2rem;
     }
-    
+
     .text-content {
         align-items: center;
     }
-    
+
     .text-body p {
         max-width: 100%;
     }
-    
+
     .image-content img {
         height: 25rem;
         width: 25rem;
@@ -282,12 +289,15 @@
     .navbar {
         padding: 0 2rem;
     }
+
     .landing-content {
         padding: 0 2rem;
     }
+
     .text-header h1 {
         font-size: 2.8rem;
     }
+
     .image-content img {
         height: 18rem;
         width: 18rem;
