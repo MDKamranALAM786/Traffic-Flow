@@ -5,17 +5,17 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 
 import { AuthContext } from "../context/AuthContext.jsx";
+import { LocationContext } from "../context/LocationContext.jsx";
 import "../../public/styles/home.css";
 
 export default function HomePage() {
     const router = useNavigate();
+
     const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
+    const { location, setLocation, locationAvailable, setLocationAvailable } = useContext(LocationContext);
 
     const [src, setSrc] = useState("");
     const [dest, setDest] = useState("");
-
-    const [location, setLocation] = useState(null);
-    const [locationAvailable, setLocationAvailable] = useState(null);
 
     const navigateToAuth = () => {
         router("/auth");
@@ -33,28 +33,26 @@ export default function HomePage() {
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        router("/travel");
+        router("/map");
     };
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
         setIsAuthenticated(token ? true : false);
 
-        if (navigator.geolocation) {
+        if (navigator.geolocation && locationAvailable !== true) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
                     setLocation({ latitude, longitude });
                     setLocationAvailable(true);
+                    console.log(`Location Available : ${locationAvailable}`);
                 },
                 (error) => {
-                    console.log(error.message);
+                    console.log(`Error in fetching location : ${error.message}`);
                     setLocationAvailable(false);
                 }
             );
-        } else {
-            console.log("Location Service is not available in current browser");
-            setLocationAvailable(false);
         }
     }, [setIsAuthenticated]);
 
