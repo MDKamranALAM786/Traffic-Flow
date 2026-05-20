@@ -40,13 +40,12 @@ export default function HomePage() {
         const token = localStorage.getItem("accessToken");
         setIsAuthenticated(token ? true : false);
 
-        if (navigator.geolocation && locationAvailable !== true) {
+        if(navigator.geolocation && locationAvailable !== true) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setLocation({ latitude, longitude });
+                    const {latitude, longitude} = position.coords;
+                    setLocation({latitude, longitude});
                     setLocationAvailable(true);
-                    console.log(`Location Available : ${locationAvailable}`);
                 },
                 (error) => {
                     console.log(`Error in fetching location : ${error.message}`);
@@ -54,7 +53,7 @@ export default function HomePage() {
                 }
             );
         }
-    }, [setIsAuthenticated]);
+    }, []);
 
     const statusText = locationAvailable ? 'LOCATION DETECTED' : 'ENTER YOUR ROUTE';
 
