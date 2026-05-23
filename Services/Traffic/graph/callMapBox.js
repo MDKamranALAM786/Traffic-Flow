@@ -1,16 +1,15 @@
 import "dotenv/config";
-import axios from "axios";
 
-import {axiosWithRetry} from "./helper.js";
+import { axiosWithRetry } from "./helper.js";
 
-export const getRealTravelTime = async (neighbourPairs, processedEdges, nodeMap, newTravelTimes) => {
+export const getRealTravelTime = async (neighbourPairs, processedEdges, nodeMap, newTravelTimes, requireTraffic) => {
     try {
         let nodePos = {};
         let idx = 0;
 
         let nodeIds = [];
         let dataPoints = [];
-        for(let [key, value] of nodeMap) {
+        for (let [key, value] of nodeMap) {
             nodeIds.push(key);
             dataPoints.push(value);
 
@@ -18,8 +17,8 @@ export const getRealTravelTime = async (neighbourPairs, processedEdges, nodeMap,
         }
 
         const ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
-        let url = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving-traffic/`;
-        let count = 0;
+        let callType = requireTraffic ? "-traffic" : "";
+        let url = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving${callType}/`;
         dataPoints.forEach((point) => {
             let lat = point.lat;
             let long = point.long;
@@ -28,26 +27,25 @@ export const getRealTravelTime = async (neighbourPairs, processedEdges, nodeMap,
         url = url.slice(0, -1) + `?access_token=${ACCESS_TOKEN}`;
 
         const result = await axiosWithRetry(url);
-        const {durations} = result.data;
+        const { durations } = result.data;
 
-        for(let edge of processedEdges) {
-            let {node1, node2} = neighbourPairs[edge];
+        for (let edge of processedEdges) {
+            let { node1, node2 } = neighbourPairs[edge];
 
             let node1Pos = nodePos[node1.id];
             let node2Pos = nodePos[node2.id];
             let travelTime = durations[node1Pos][node2Pos];
 
             newTravelTimes.push({
-                node1 : node1.id,
-                node2 : node2.id,
+                node1: node1.id,
+                node2: node2.id,
                 travelTime
             });
         }
 
-        // console.log(newTravelTimes);
-        return(newTravelTimes);
-    } catch(err) {
+        return (newTravelTimes);
+    } catch (err) {
         console.log("Some Error in fetching real travel time");
-        throw(err);
+        throw (err);
     }
 };

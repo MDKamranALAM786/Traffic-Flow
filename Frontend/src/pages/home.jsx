@@ -12,7 +12,7 @@ export default function HomePage() {
     const router = useNavigate();
 
     const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
-    const { location, setLocation, locationAvailable, setLocationAvailable } = useContext(LocationContext);
+    const { locationAvailable, getLocation } = useContext(LocationContext);
 
     const [src, setSrc] = useState("");
     const [dest, setDest] = useState("");
@@ -39,20 +39,7 @@ export default function HomePage() {
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
         setIsAuthenticated(token ? true : false);
-
-        if(navigator.geolocation && locationAvailable !== true) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const {latitude, longitude} = position.coords;
-                    setLocation({latitude, longitude});
-                    setLocationAvailable(true);
-                },
-                (error) => {
-                    console.log(`Error in fetching location : ${error.message}`);
-                    setLocationAvailable(false);
-                }
-            );
-        }
+        getLocation();
     }, []);
 
     const statusText = locationAvailable ? 'LOCATION DETECTED' : 'ENTER YOUR ROUTE';

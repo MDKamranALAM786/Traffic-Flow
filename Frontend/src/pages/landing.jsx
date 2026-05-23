@@ -10,7 +10,7 @@ export default function LandingPage() {
     const router = useNavigate();
 
     const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
-    const { location, setLocation, locationAvailable, setLocationAvailable } = useContext(LocationContext);
+    const { getLocation } = useContext(LocationContext);
 
     const navigateToAuth = () => {
         router("/auth");
@@ -21,24 +21,8 @@ export default function LandingPage() {
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
-        if (token) {
-            setIsAuthenticated(true);
-        }
-
-        if (navigator.geolocation && locationAvailable !== true) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    setLocation({ latitude, longitude });
-                    setLocationAvailable(true);
-                    console.log(`Location Available : ${locationAvailable}`);
-                },
-                (error) => {
-                    console.log(`Error in fetching location : ${error.message}`);
-                    setLocationAvailable(false);
-                }
-            );
-        }
+        setIsAuthenticated(token ? true : false);
+        getLocation();
     }, []);
 
     return (
