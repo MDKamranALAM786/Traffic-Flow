@@ -1,9 +1,9 @@
 import driver from "../config/connect.js";
 
-import {getRoute} from "./getPaths.js";
+import { getRoute } from "./getPaths.js";
 
 export const navigate = async (lat1, long1, lat2, long2) => {
-    const session = driver.session({database : "routing-project"});
+    const session = driver.session({ database: "routing-project" });
 
     try {
         let src = await getDataPoint(lat1, long1, session);
@@ -11,17 +11,17 @@ export const navigate = async (lat1, long1, lat2, long2) => {
 
         let shortestPath = await getRoute(src.lat, src.long, dest.lat, dest.long, session);
 
-        if(!shortestPath) {
+        if (!shortestPath) {
             console.log("No Route Found");
-            return(null);
+            return (null);
         }
 
-        let {route, totalTime} = shortestPath;
+        let { route, totalTime } = shortestPath;
 
         let steps = [];
 
-        for(let i=1;i<route.length;i++) {
-            let from = route[i-1];
+        for (let i = 1; i < route.length; i++) {
+            let from = route[i - 1];
             let to = route[i];
 
             const result = await session.run(`
@@ -29,8 +29,8 @@ export const navigate = async (lat1, long1, lat2, long2) => {
                 WITH r.type AS type, r.distance AS distance, r.travel_time AS time
                 RETURN *`,
                 {
-                    start : from.id,
-                    end : to.id
+                    start: from.id,
+                    end: to.id
                 }
             );
 
@@ -39,9 +39,9 @@ export const navigate = async (lat1, long1, lat2, long2) => {
             let type = result.records[0].get("type");
 
             let instruction;
-            if(type === "highway") {
+            if (type === "highway") {
                 instruction = `Take highway from ${from} to ${to}`;
-            } else if(type === "main") {
+            } else if (type === "main") {
                 instruction = `Continue on main road from ${from} to ${to}`;
             } else {
                 instruction = `Go via street from ${from} to ${to}`;
@@ -51,19 +51,19 @@ export const navigate = async (lat1, long1, lat2, long2) => {
                 from,
                 to,
                 instruction,
-                distance : `${distance}Km`,
-                time : `${time}min`
+                distance: `${distance}Km`,
+                time: `${time}min`
             };
             steps.push(path);
         }
 
-        let finalPath = {route, steps, totalTime};
+        let finalPath = { route, steps, totalTime };
         console.log(finalPath);
 
-        return(finalPath);
-    } catch(err) {
+        return (finalPath);
+    } catch (err) {
         console.log(`Error in navigate function : ${err}`);
-        return(null);
+        return (null);
     } finally {
         await session.close();
     }
@@ -80,7 +80,7 @@ const getDataPoint = async (lat, long, session) => {
             RETURN target, dist
             ORDER BY dist
             LIMIT 1`,
-            {lat : Number(lat), long : Number(long)}
+            { lat: Number(lat), long: Number(long) }
         );
 
         let record = result.records[0];
@@ -88,10 +88,10 @@ const getDataPoint = async (lat, long, session) => {
         lat = record.get("target").properties.lat;
         long = record.get("target").properties.lon;
 
-        let coord = {lat, long};
-        return(coord);
-    } catch(err) {
+        let coord = { lat, long };
+        return (coord);
+    } catch (err) {
         console.log("Some Problem in getting nearest Data Points to the exact location");
-        throw(err);
+        throw (err);
     }
 };
