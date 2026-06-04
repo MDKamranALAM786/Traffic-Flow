@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
+import axios from "axios";
 
 import { AuthContext } from "../context/AuthContext.jsx";
 import { LocationContext } from "../context/LocationContext.jsx";
@@ -16,6 +17,8 @@ export default function HomePage() {
 
     const [src, setSrc] = useState("");
     const [dest, setDest] = useState("");
+    const [places, setPlaces] = useState([]);
+    const [isSelected, setIsSelected] = useState(false);
 
     const navigateToAuth = () => {
         router("/auth");
@@ -28,6 +31,7 @@ export default function HomePage() {
             setSrc(value);
         } else {
             setDest(value);
+            setIsSelected(false);
         }
     };
 
@@ -35,6 +39,50 @@ export default function HomePage() {
         event.preventDefault();
         router("/map");
     };
+
+    const handleSelectPlace = (place) => {
+        setDest(place.full_address);
+        setIsSelected(true);
+        setPlaces([]);
+    };
+
+    useEffect(() => {
+        if (dest.length <= 5 || isSelected) {
+            if (dest.length <= 5) {
+                setPlaces([]);
+            }
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            try {
+                const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=88.3639%2C22.5726&access_token=${accessToken}`;
+                const results = await axios.get(URL);
+                const suggestions = results.data.features;
+
+                let placesList = [];
+                for (let place of suggestions) {
+                    let full_address = place.properties.full_address;
+                    let lat = place.properties.coordinates.latitude;
+                    let long = place.properties.coordinates.longitude;
+                    let coord = { lat, long };
+
+                    placesList.push({ full_address, coord });
+                }
+
+                console.log(placesList);
+                setPlaces(placesList);
+            } catch (err) {
+                console.log(`Some Error while searching location suggestions : ${err.message}`);
+                setPlaces([]);
+            }
+        }, 2000);
+        return (() => {
+            clearTimeout(timer);
+            console.log("Cleared Timeout");
+        });
+    }, [dest, isSelected]);
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
@@ -125,14 +173,33 @@ export default function HomePage() {
                                             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                                         </svg> DESTINATION
                                     </div>
-                                    <TextField
-                                        placeholder="Where to?"
-                                        variant="outlined"
-                                        name="destination"
-                                        value={dest}
-                                        onChange={handleChange}
-                                        disabled={!isAuthenticated}
-                                    />
+                                    <div className="input-relative-container">
+                                        <TextField
+                                            placeholder="Where to?"
+                                            variant="outlined"
+                                            name="destination"
+                                            value={dest}
+                                            onChange={handleChange}
+                                            disabled={!isAuthenticated}
+                                        />
+                                        {/* Suggestions dropdown container positioned next to/below the text field */}
+                                        {places.length > 0 && (
+                                            <div className="suggestions-dropdown">
+                                                {places.map((place, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className="suggestion-item"
+                                                        onClick={() => handleSelectPlace(place)}
+                                                    >
+                                                        <svg className="suggestion-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                                                        </svg>
+                                                        <span className="suggestion-text">{place.full_address}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </Box>
                             <Box className="search-btn">
