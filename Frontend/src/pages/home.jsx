@@ -13,9 +13,8 @@ export default function HomePage() {
     const router = useNavigate();
 
     const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
-    const { locationAvailable, getLocation } = useContext(LocationContext);
+    const { location, locationAvailable, getLocation, setDestCoord, destCoordAvailable, setDestCoordAvailable } = useContext(LocationContext);
 
-    const [src, setSrc] = useState("");
     const [dest, setDest] = useState("");
     const [places, setPlaces] = useState([]);
     const [isSelected, setIsSelected] = useState(false);
@@ -26,28 +25,53 @@ export default function HomePage() {
 
     const handleChange = (event) => {
         event.preventDefault();
-        const { name, value } = event.target;
-        if (name === "source") {
-            setSrc(value);
-        } else {
-            setDest(value);
-            setIsSelected(false);
-        }
+        const { value } = event.target;
+        setDest(value);
+        setIsSelected(false);
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        router("/map");
+    const handleSubmit = async (event) => {
+        try {
+            event.preventDefault();
+
+            if (!destCoordAvailable) {
+                const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&access_token=${accessToken}`;
+                const response = await axios.get(URL);
+                const feature = response.data.features[0];
+
+                let lat = feature.properties.coordinates.latitude;
+                let long = feature.properties.coordinates.longitude;
+                setDestCoord({ lat, long });
+                setDestCoordAvailable(true);
+            }
+
+            setPlaces([]);
+            setDest("");
+            setIsSelected(false);
+
+            router("/map");
+        } catch (err) {
+            console.log(`Some Error while finding location in maps : ${err.message}`);
+            setPlaces([]);
+            setDest("");
+            setIsSelected(false);
+            setDestCoord(null);
+            setDestCoordAvailable(false);
+        }
     };
 
     const handleSelectPlace = (place) => {
         setDest(place.full_address);
         setIsSelected(true);
         setPlaces([]);
+
+        setDestCoord(place.coord);
+        setDestCoordAvailable(true);
     };
 
     useEffect(() => {
-        if (dest.length <= 5 || isSelected) {
+        if (dest.length <= 5 || isSelected || !locationAvailable) {
             if (dest.length <= 5) {
                 setPlaces([]);
             }
@@ -57,7 +81,7 @@ export default function HomePage() {
         const timer = setTimeout(async () => {
             try {
                 const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=88.3639%2C22.5726&access_token=${accessToken}`;
+                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&access_token=${accessToken}`;
                 const results = await axios.get(URL);
                 const suggestions = results.data.features;
 
@@ -82,7 +106,7 @@ export default function HomePage() {
             clearTimeout(timer);
             console.log("Cleared Timeout");
         });
-    }, [dest, isSelected]);
+    }, [dest, isSelected, locationAvailable]);
 
     useEffect(() => {
         const token = localStorage.getItem("accessToken");
@@ -148,25 +172,6 @@ export default function HomePage() {
                     <div className="search-space">
                         <Box className="search-box">
                             <Box className="input-box">
-                                {
-                                    !locationAvailable && (
-                                        <div className="input-field-wrapper">
-                                            <div className="input-label">
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="#3b82f6" stroke="none">
-                                                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                                                </svg> SOURCE
-                                            </div>
-                                            <TextField
-                                                placeholder="Starting point"
-                                                variant="outlined"
-                                                name="source"
-                                                value={src}
-                                                onChange={handleChange}
-                                                disabled={!isAuthenticated}
-                                            />
-                                        </div>
-                                    )
-                                }
                                 <div className="input-field-wrapper">
                                     <div className="input-label">
                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="#ef4444" stroke="none">
@@ -202,11 +207,21 @@ export default function HomePage() {
                                     </div>
                                 </div>
                             </Box>
+                            {isAuthenticated && !locationAvailable && (
+                                <div className="location-warning-text">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                    </svg>
+                                    <span>Grant Location to continue routing</span>
+                                </div>
+                            )}
                             <Box className="search-btn">
                                 <Button
                                     variant="contained"
                                     onClick={handleSubmit}
-                                    disabled={!isAuthenticated}
+                                    disabled={!isAuthenticated || !locationAvailable}
                                 >
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
                                         <line x1="5" y1="12" x2="19" y2="12"></line>

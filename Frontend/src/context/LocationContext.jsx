@@ -1,5 +1,4 @@
 import { createContext, useState, useEffect, useRef } from "react";
-import axios from "axios";
 
 import { callTrafficService } from "../utils/ServiceCall.jsx";
 
@@ -8,6 +7,8 @@ export const LocationContext = createContext({});
 export const LocationProvider = ({ children }) => {
     const [location, setLocation] = useState(null);
     const [locationAvailable, setLocationAvailable] = useState(null);
+    const [destCoord, setDestCoord] = useState(null);
+    const [destCoordAvailable, setDestCoordAvailable] = useState(false);
 
     const hasMadeFirstCall = useRef(false);
     const currLocation = useRef(location);
@@ -51,7 +52,18 @@ export const LocationProvider = ({ children }) => {
         }
     }, [locationAvailable]);
 
-    const data = { location, setLocation, locationAvailable, setLocationAvailable, getLocation };
+    const data = {
+        location,
+        setLocation,
+        locationAvailable,
+        setLocationAvailable,
+        destCoord,
+        setDestCoord,
+        destCoordAvailable,
+        setDestCoordAvailable,
+        getLocation
+
+    };
     return (
         <LocationContext.Provider value={data}>
             {children}
