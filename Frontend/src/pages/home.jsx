@@ -40,9 +40,9 @@ export default function HomePage() {
                 const response = await axios.get(URL);
                 const feature = response.data.features[0];
 
-                let lat = feature.properties.coordinates.latitude;
-                let long = feature.properties.coordinates.longitude;
-                setDestCoord({ lat, long });
+                let latitude = feature.properties.coordinates.latitude;
+                let longitude = feature.properties.coordinates.longitude;
+                setDestCoord({ latitude, longitude });
                 setDestCoordAvailable(true);
             }
 
@@ -88,9 +88,9 @@ export default function HomePage() {
                 let placesList = [];
                 for (let place of suggestions) {
                     let full_address = place.properties.full_address;
-                    let lat = place.properties.coordinates.latitude;
-                    let long = place.properties.coordinates.longitude;
-                    let coord = { lat, long };
+                    let latitude = place.properties.coordinates.latitude;
+                    let longitude = place.properties.coordinates.longitude;
+                    let coord = { latitude, longitude };
 
                     placesList.push({ full_address, coord });
                 }

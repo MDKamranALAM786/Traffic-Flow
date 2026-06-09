@@ -6,7 +6,7 @@ export const projectGraph = async (session) => {
 
         let projected = check.records.length != 0 && check.records[0].get("exists");
         console.log(`Projected : ${projected}`);
-        if(projected) {
+        if (projected) {
             await session.run(`
                 CALL gds.graph.drop("roadGraph");
             `);
@@ -23,9 +23,9 @@ export const projectGraph = async (session) => {
                 }
             );
         `);
-    } catch(err) {
+    } catch (err) {
         console.log("Error in Projecting Graph");
-        throw(err);
+        throw (err);
     }
 };
 
@@ -46,19 +46,19 @@ export const getRoute = async (lat1, long1, lat2, long2, session) => {
             
             RETURN totalCost, nodeIds;`,
             {
-                lat1 : Number(lat1),
-                long1 : Number(long1),
-                lat2 : Number(lat2),
-                long2 : Number(long2)
+                lat1: Number(lat1),
+                long1: Number(long1),
+                lat2: Number(lat2),
+                long2: Number(long2)
             }
         );
         console.log("Result");
         console.log(result);
-        
+
         let record = result.records[0];
-        if(!record) {
+        if (!record) {
             console.log("No Route Found");
-            return(null);
+            return (null);
         }
 
         let totalTime = record.get("totalCost");
@@ -69,25 +69,25 @@ export const getRoute = async (lat1, long1, lat2, long2, session) => {
             MATCH (n:Intersection)
             WHERE id(n) = id
             RETURN n.id AS id, n.lat AS lat, n.lon AS long`,
-            {nodeIds : nodeIds}
+            { nodeIds: nodeIds }
         );
         let names = pathResult.records;
-        
+
         let nodes = names.map((name) => ({
-            id : name.get("id"),
-            lat : name.get("lat"),
-            long : name.get("long")
+            id: name.get("id"),
+            longitude: name.get("long"),
+            latitude: name.get("lat")
         }));
 
         let shortestPath = {
-            route : nodes,
-            totalTime : totalTime
+            route: nodes,
+            totalTime: totalTime
         };
         console.log(shortestPath);
 
-        return(shortestPath);
-    } catch(err) {
+        return (shortestPath);
+    } catch (err) {
         console.log(`Error in getPaths : ${err}`);
-        throw(err);
+        throw (err);
     }
 };

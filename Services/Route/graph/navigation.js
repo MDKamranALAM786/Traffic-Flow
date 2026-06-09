@@ -57,8 +57,11 @@ export const navigate = async (lat1, long1, lat2, long2) => {
             steps.push(path);
         }
 
+        route = route.map((node) => ([node.longitude, node.latitude]));
+        console.log(route);
+
         let finalPath = { route, steps, totalTime };
-        console.log(finalPath);
+        // console.log(finalPath);
 
         return (finalPath);
     } catch (err) {
