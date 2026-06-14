@@ -14,6 +14,10 @@ export default function MapPage() {
 
     const { location, destCoord } = useContext(LocationContext);
 
+    let geoJSONObject = { properties: {} };
+    const mapSourceId = "route";
+    const mapLayerId = "route-layer";
+
     const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
     const isSamePoint = (lat1, long1, lat2, long2) => {
@@ -29,6 +33,10 @@ export default function MapPage() {
             container: mapContainerRef.current,
             center: [destCoord.longitude, destCoord.latitude],
             zoom: 14
+        });
+
+        mapRef.current.on("error", (err) => {
+            console.log(`Mapbox Error : ${err}`);
         });
 
         // current location marker
@@ -49,6 +57,28 @@ export default function MapPage() {
 
                 setRoutes(route);
                 setRoutesAvailable(true);
+
+                geoJSONObject.type = "Feature";
+                geoJSONObject.geometry = {
+                    type: "LineString",
+                    coordinates: route
+                };
+                console.log("GeoJSON Object :");
+                console.log(geoJSONObject);
+
+                mapRef.current.addSource(mapSourceId, {
+                    type: "geojson",
+                    data: geoJSONObject
+                });
+                mapRef.current.addLayer({
+                    id: mapLayerId,
+                    type: "line",
+                    source: mapSourceId,
+                    paint: {
+                        "line-color": "blue",
+                        "line-width": 6
+                    }
+                });
             } catch (err) {
                 console.log(`Some Problem in fetching route : ${err.message}`);
                 setRoutes([]);

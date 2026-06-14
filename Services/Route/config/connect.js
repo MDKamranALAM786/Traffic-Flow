@@ -1,9 +1,9 @@
 import "dotenv/config";
 import neo4j from "neo4j-driver";
 
-const URL = process.env.URL;
-const user = process.env.USER;
-const password = process.env.PASSWORD;
+const URL = process.env.NEO4J_URL;
+const user = process.env.NEO4J_USER;
+const password = process.env.NEO4J_PASSWORD;
 
 let driver = neo4j.driver(
     URL,

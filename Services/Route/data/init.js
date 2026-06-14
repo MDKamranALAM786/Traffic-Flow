@@ -1,41 +1,46 @@
 import driver from "../config/connect.js";
+import { getRoadType, getSpeed, getDistance } from "./helper.js";
 
 const nodeMap = {};
+const BATCH_SIZE = 1000;
 
 export const createNodes = async (nodes) => {
-    const session = driver.session({database : "routing-project"});
+    const session = driver.session({ database: "routing-project" });
 
     try {
-        for(let node of nodes) {
-            let {type, id, lat, lon} = node;
-            nodeMap[id] = [lat, lon];
+        for (let i = 0; i < nodes.length; i += BATCH_SIZE) {
+            let batch = nodes.slice(i, i + BATCH_SIZE).map((node) => {
+                nodeMap[node.id] = [node.lat, node.lon];
+                return ({
+                    id: node.id,
+                    lat: node.lat,
+                    lon: node.lon
+                });
+            });
 
             const result = await session.run(`
-                CREATE (:Intersection {id:$id, lat:$lat, lon:$lon})`,
-                {
-                    type : type,
-                    id : id,
-                    lat : lat,
-                    lon : lon
-                }
-            );
+                UNWIND $batch AS node
+                CREATE(:Intersection {id:node.id, lat:node.lat, lon:node.lon})
+                RETURN COUNT(node) AS nodesCreated
+            `, { batch });
         }
 
         console.log("Nodes Created Successfully");
-    } catch(err) {
+    } catch (err) {
         console.log("Error in creating nodes");
-        throw(err);
+        throw (err);
     } finally {
         await session.close();
     }
 };
 
 export const createRoads = async (roads) => {
-    const session = driver.session({database : "routing-project"});
+    const session = driver.session({ database: "routing-project" });
 
     try {
-        for(let road of roads) {
-            let {type, id, nodes, tags} = road;
+        let edges = [];
+        for (let road of roads) {
+            let { type, id, nodes, tags } = road;
 
             // check the road type and speed
             let roadType = getRoadType(tags);
@@ -43,10 +48,10 @@ export const createRoads = async (roads) => {
 
             let oneWay = tags?.oneway === "yes";
 
-            for(let i=1;i<nodes.length;i++) {
-                let start = nodes[i-1];
+            for (let i = 1; i < nodes.length; i++) {
+                let start = nodes[i - 1];
                 let end = nodes[i];
-                if(!nodeMap[start] || !nodeMap[end]) {
+                if (!nodeMap[start] || !nodeMap[end]) {
                     continue;
                 }
 
@@ -57,103 +62,53 @@ export const createRoads = async (roads) => {
 
                 let time = (distance / maxSpeed) * 60;
 
-                const result = await session.run(`
-                    MATCH (start:Intersection {id:$id1})
-                    MATCH (end:Intersection {id:$id2})
-                    CREATE (start)-[r:ROAD {id:$roadId, type:$type, distance:$dist, base_time:$time, travel_time:$time, traffic_factor:1, maxSpeed:$speed}]->(end)
-                    RETURN r AS road`,
-                    {
-                        id1 : start,
-                        id2 : end,
-                        roadId : id,
-                        type : roadType,
-                        dist : distance,
-                        speed : maxSpeed,
-                        time : time
-                    }
-                );
-
-                if(!oneWay) {
-                    await session.run(`
-                        MATCH (start:Intersection {id:$id1})
-                        MATCH (end:Intersection {id:$id2})
-                        CREATE (end)-[r:ROAD {id:$roadId, type:$type, distance:$dist, base_time:$time, travel_time:$time, traffic_factor:1, maxSpeed:$speed}]->(start)
-                        RETURN r AS road`,
-                        {
-                            id1 : start,
-                            id2 : end,
-                            roadId : id,
-                            type : roadType,
-                            dist : distance,
-                            speed : maxSpeed,
-                            time : time
-                        }
-                    );
+                edges.push({ id1: start, id2: end, roadId: id, type: roadType, dist: distance, speed: maxSpeed, time });
+                if (!oneWay) {
+                    edges.push({ id1: end, id2: start, roadId: id, type: roadType, dist: distance, speed: maxSpeed, time });
                 }
             }
         }
 
+        for (let i = 0; i < edges.length; i += BATCH_SIZE) {
+            let batch = edges.slice(i, i + BATCH_SIZE);
+            const result = await session.run(`
+                UNWIND $batch AS edge
+                MATCH (start:Intersection {id:edge.id1})
+                MATCH (end:Intersection {id:edge.id2})
+
+                CREATE (start)-[:ROAD {
+                    id:edge.roadId,
+                    type:edge.type,
+                    distance:edge.dist,
+                    base_time:edge.time,
+                    travel_time:edge.time,
+                    traffic_factor:1,
+                    maxSpeed:edge.speed
+                }]->(end)
+
+                RETURN COUNT(edge) AS edgesCreated
+            `, { batch });
+        }
+
         console.log("Roads Created Successfully");
-    } catch(err) {
+    } catch (err) {
         console.log("Error in creating roads");
-        throw(err);
+        throw (err);
     } finally {
         await session.close();
     }
 };
 
-const getRoadType = (tags) => {
-    const typeMap = {
-        motorway: "highway",
-        primary: "main",
-        secondary: "main",
-        tertiary: "main",
-        residential: "street",
-        service: "street"
-    };
+export const clearDatabase = async () => {
+    const session = driver.session({ database: "routing-project" });
 
-    let highway = tags?.highway;
-    let roadType = typeMap[highway];
-
-    return(roadType || "street");
-};
-
-const getSpeed = (tags) => {
-    const speedMap = {
-        motorway: 70,
-        primary: 50,
-        secondary: 40,
-        tertiary: 35,
-        residential: 25,
-        service: 15
-    };
-
-    let maxSpeed;
-    if(tags?.maxspeed) {
-        maxSpeed = parseFloat(tags.maxspeed);
-    } else {
-        let highway = tags?.highway;
-        maxSpeed = speedMap[highway];
+    try {
+        await session.run(`MATCH (n) DETACH DELETE n`);
+        console.log("Database Cleared");
+        await session.run(`CREATE INDEX intersection_id IF NOT EXISTS FOR (n:Intersection) ON (n.id)`);
+    } catch (err) {
+        console.log(`Error in Clearing Database : ${err}`);
+    } finally {
+        await session.close();
     }
-
-    return(maxSpeed || 30);
-};
-
-const getDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth radius in km
-
-    const toRad = (deg) => deg * (Math.PI / 180);
-
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(toRad(lat1)) *
-              Math.cos(toRad(lat2)) *
-              Math.sin(dLon / 2) *
-              Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    const distance = R * c;
-    return(distance); // distance in km
 };
