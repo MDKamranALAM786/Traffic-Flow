@@ -1,5 +1,5 @@
-import { useRef, useEffect, useContext, useState } from 'react'
-import mapboxgl from 'mapbox-gl'
+import { useRef, useEffect, useContext, useState } from 'react';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 import { LocationContext } from "../context/LocationContext.jsx";
