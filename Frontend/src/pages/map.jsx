@@ -1,16 +1,23 @@
 import { useRef, useEffect, useContext, useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+import "../../public/styles/map.css";
 import { LocationContext } from "../context/LocationContext.jsx";
 import { callRouteService } from "../utils/ServiceCall.jsx";
 
 export default function MapPage() {
+    const router = useNavigate();
+
     const mapRef = useRef(null);
     const mapContainerRef = useRef(null);
+    const srcMarkerRef = useRef(null);
 
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
+
+    const [isNavigating, setIsNavigating] = useState(false);
 
     const { location, destCoord } = useContext(LocationContext);
 
@@ -27,6 +34,32 @@ export default function MapPage() {
         return (isSame);
     };
 
+    const toggleNavigation = () => {
+        setIsNavigating(!isNavigating);
+    };
+
+    useEffect(() => {
+        if (!isNavigating) {
+            return;
+        }
+
+        const watchPositionId = navigator.geolocation.watchPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                console.log("Watching Position :");
+                console.log(`Latitude : ${latitude}, Longitude : ${longitude}`);
+            },
+            (err) => {
+                console.log(`Some Error while watching position : ${err.message}`);
+            }
+        );
+
+        return (() => {
+            navigator.geolocation.clearWatch(watchPositionId);
+            console.log("Cleared Watch Position Id");
+        });
+    }, [isNavigating]);
+
     useEffect(() => {
         mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
         mapRef.current = new mapboxgl.Map({
@@ -39,8 +72,12 @@ export default function MapPage() {
             console.log(`Mapbox Error : ${err}`);
         });
 
+        if (srcMarkerRef.current) {
+            srcMarkerRef.current.remove();
+        }
+
         // current location marker
-        new mapboxgl.Marker({ color: "red" })
+        srcMarkerRef.current = new mapboxgl.Marker({ color: "red" })
             .setLngLat([location.longitude, location.latitude])
             .addTo(mapRef.current);
         // destination marker
@@ -94,6 +131,23 @@ export default function MapPage() {
     return (
         <>
             <div id='map-container' ref={mapContainerRef} style={{ height: "100vh" }} />
+
+            <div className="buttons">
+                <button id="home-btn" className="map-icon-btn home-btn" onClick={() => { router("/home"); }} title="Go Home">
+                    <img src="/assets/HomeIcon.png" alt="Home" className="btn-icon" />
+                    <span className="btn-label">Home</span>
+                </button>
+
+                <button
+                    id="navigate-btn"
+                    className={`map-icon-btn navigate-btn${isNavigating ? ' active' : ''}`}
+                    onClick={toggleNavigation}
+                    title={isNavigating ? 'Stop Navigation' : 'Start Navigation'}
+                >
+                    <img src="/assets/NavigateIcon.png" alt="Navigate" className="btn-icon" />
+                    <span className="btn-label">{isNavigating ? 'Stop' : 'Navigate'}</span>
+                </button>
+            </div>
         </>
     );
 };
