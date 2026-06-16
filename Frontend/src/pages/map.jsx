@@ -12,12 +12,15 @@ export default function MapPage() {
 
     const mapRef = useRef(null);
     const mapContainerRef = useRef(null);
+
     const srcMarkerRef = useRef(null);
+    const bounds = useRef(new mapboxgl.LngLatBounds());
 
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
 
     const [isNavigating, setIsNavigating] = useState(false);
+    const [hasArrived, setHasArrived] = useState(false);
 
     const { location, destCoord } = useContext(LocationContext);
 
@@ -28,14 +31,27 @@ export default function MapPage() {
     const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
     const isSamePoint = (lat1, long1, lat2, long2) => {
-        const THRESHOLD = 0.0018;
+        const THRESHOLD = 0.002;
         const isSame = Math.abs(lat1 - lat2) < THRESHOLD && Math.abs(long1 - long2) < THRESHOLD;
-        console.log(`Is Same Point : ${isSame}`);
         return (isSame);
     };
 
     const toggleNavigation = () => {
         setIsNavigating(!isNavigating);
+    };
+
+    const reachedDestination = (lat, long) => {
+        if (isSamePoint(lat, long, destCoord.latitude, destCoord.longitude)) {
+            console.log("Reached Destination");
+            setIsNavigating(false);
+            setHasArrived(true);
+        }
+    };
+    const updateSrcMarker = (lat, long) => {
+        if (srcMarkerRef.current) {
+            srcMarkerRef.current.setLngLat([long, lat]);
+            mapRef.current.panTo([long, lat]);
+        }
     };
 
     useEffect(() => {
@@ -48,6 +64,10 @@ export default function MapPage() {
                 const { latitude, longitude } = position.coords;
                 console.log("Watching Position :");
                 console.log(`Latitude : ${latitude}, Longitude : ${longitude}`);
+
+                reachedDestination(latitude, longitude);
+                updateSrcMarker(latitude, longitude);
+                console.log("Updated Source Marker");
             },
             (err) => {
                 console.log(`Some Error while watching position : ${err.message}`);
@@ -94,6 +114,11 @@ export default function MapPage() {
 
                 setRoutes(route);
                 setRoutesAvailable(true);
+
+                route.forEach((coord) => {
+                    bounds.current.extend(coord);
+                });
+                mapRef.current.fitBounds(bounds.current, { padding: 60 });
 
                 geoJSONObject.type = "Feature";
                 geoJSONObject.geometry = {
