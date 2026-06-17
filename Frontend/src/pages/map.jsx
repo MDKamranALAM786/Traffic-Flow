@@ -13,8 +13,8 @@ export default function MapPage() {
     const mapRef = useRef(null);
     const mapContainerRef = useRef(null);
 
+    const prevSrcRef = useRef(null);
     const srcMarkerRef = useRef(null);
-    const bounds = useRef(new mapboxgl.LngLatBounds());
 
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
@@ -24,7 +24,6 @@ export default function MapPage() {
 
     const { location, destCoord } = useContext(LocationContext);
 
-    let geoJSONObject = { properties: {} };
     const mapSourceId = "route";
     const mapLayerId = "route-layer";
 
@@ -36,16 +35,65 @@ export default function MapPage() {
         return (isSame);
     };
 
+    const getDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371; // Earth radius in km
+
+        const toRad = (deg) => deg * (Math.PI / 180);
+
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) *
+            Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        const distance = R * c;
+        return (distance); // distance in km
+    };
+
+    const reCalculateRoute = async (newLocation) => {
+        const route = await callRouteService(newLocation, destCoord);
+        setRoutes(route);
+        setRoutesAvailable(true);
+
+        mapRef.current.getSource(mapSourceId).setData({
+            type: "Feature",
+            properties: {},
+            geometry: {
+                type: "LineString",
+                coordinates: route
+            }
+        });
+    };
+
     const toggleNavigation = () => {
         setIsNavigating(!isNavigating);
     };
 
     const reachedDestination = (lat, long) => {
+        let reached = false;
         if (isSamePoint(lat, long, destCoord.latitude, destCoord.longitude)) {
             console.log("Reached Destination");
+
             setIsNavigating(false);
             setHasArrived(true);
+
+            mapRef.current.getSource(mapSourceId).setData({
+                type: "Feature",
+                properties: {},
+                geometry: {
+                    type: "LineString",
+                    coordinates: []
+                }
+            });
+
+
+            reached = true;
         }
+        return (reached);
     };
     const updateSrcMarker = (lat, long) => {
         if (srcMarkerRef.current) {
@@ -60,14 +108,24 @@ export default function MapPage() {
         }
 
         const watchPositionId = navigator.geolocation.watchPosition(
-            (position) => {
+            async (position) => {
                 const { latitude, longitude } = position.coords;
                 console.log("Watching Position :");
                 console.log(`Latitude : ${latitude}, Longitude : ${longitude}`);
 
-                reachedDestination(latitude, longitude);
+                const reached = reachedDestination(latitude, longitude);
+                if (!reached) {
+                    const distMoved = getDistance(prevSrcRef.current.lat, prevSrcRef.current.long, latitude, longitude);
+                    if (distMoved > 0.25) {
+                        await reCalculateRoute({ latitude, longitude });
+                        prevSrcRef.current = {
+                            lat: latitude,
+                            long: longitude
+                        };
+                    }
+                    console.log("Updated Source Marker");
+                }
                 updateSrcMarker(latitude, longitude);
-                console.log("Updated Source Marker");
             },
             (err) => {
                 console.log(`Some Error while watching position : ${err.message}`);
@@ -89,7 +147,7 @@ export default function MapPage() {
         });
 
         mapRef.current.on("error", (err) => {
-            console.log(`Mapbox Error : ${err}`);
+            console.log(`Mapbox Error : ${err.message}`);
         });
 
         if (srcMarkerRef.current) {
@@ -100,6 +158,10 @@ export default function MapPage() {
         srcMarkerRef.current = new mapboxgl.Marker({ color: "red" })
             .setLngLat([location.longitude, location.latitude])
             .addTo(mapRef.current);
+        prevSrcRef.current = {
+            lat: location.latitude,
+            long: location.longitude
+        };
         // destination marker
         if (!isSamePoint(location.latitude, location.longitude, destCoord.latitude, destCoord.longitude)) {
             new mapboxgl.Marker({ color: "black" })
@@ -115,15 +177,13 @@ export default function MapPage() {
                 setRoutes(route);
                 setRoutesAvailable(true);
 
-                route.forEach((coord) => {
-                    bounds.current.extend(coord);
-                });
-                mapRef.current.fitBounds(bounds.current, { padding: 60 });
-
-                geoJSONObject.type = "Feature";
-                geoJSONObject.geometry = {
-                    type: "LineString",
-                    coordinates: route
+                const geoJSONObject = {
+                    type: "Feature",
+                    properties: {},
+                    geometry: {
+                        type: "LineString",
+                        coordinates: route
+                    }
                 };
                 console.log("GeoJSON Object :");
                 console.log(geoJSONObject);
@@ -141,6 +201,12 @@ export default function MapPage() {
                         "line-width": 6
                     }
                 });
+
+                let bounds = new mapboxgl.LngLatBounds();
+                route.forEach((coord) => {
+                    bounds.extend(coord);
+                });
+                mapRef.current.fitBounds(bounds, { padding: 60 });
             } catch (err) {
                 console.log(`Some Problem in fetching route : ${err.message}`);
                 setRoutes([]);
