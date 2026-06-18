@@ -30,7 +30,8 @@ export const callRouteService = async (location, dest) => {
         let { route } = res.data.path;
         return (route);
     } catch (err) {
-        console.log(`Error in calling route service : ${err.message}`);
-        return (null);
+        const errResponse = JSON.parse(err.request.response).message;
+        console.log(`Failed to fetch route : ${errResponse}`);
+        throw (errResponse);
     }
 };

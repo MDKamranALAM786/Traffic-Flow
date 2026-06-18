@@ -2,6 +2,8 @@ import { useRef, useEffect, useContext, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 
 import "../../public/styles/map.css";
 import { LocationContext } from "../context/LocationContext.jsx";
@@ -15,6 +17,7 @@ export default function MapPage() {
 
     const prevSrcRef = useRef(null);
     const srcMarkerRef = useRef(null);
+    const destMarkerRef = useRef(null);
 
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
@@ -22,15 +25,17 @@ export default function MapPage() {
     const [isNavigating, setIsNavigating] = useState(false);
     const [hasArrived, setHasArrived] = useState(false);
 
-    const { location, destCoord } = useContext(LocationContext);
+    const [alertMessage, setAlertMessage] = useState(null);
+    const [alertType, setAlertType] = useState("");
+
+    const { location, destCoord, setDestCoord, destCoordAvailable, setDestCoordAvailable } = useContext(LocationContext);
 
     const mapSourceId = "route";
     const mapLayerId = "route-layer";
 
     const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
-    const isSamePoint = (lat1, long1, lat2, long2) => {
-        const THRESHOLD = 0.002;
+    const isSamePoint = (lat1, long1, lat2, long2, THRESHOLD = 0.002) => {
         const isSame = Math.abs(lat1 - lat2) < THRESHOLD && Math.abs(long1 - long2) < THRESHOLD;
         return (isSame);
     };
@@ -70,16 +75,22 @@ export default function MapPage() {
     };
 
     const toggleNavigation = () => {
+        if (!isNavigating && !destCoordAvailable) {
+            setAlertMessage("Please select destination first!");
+            setAlertType("error");
+            return;
+        }
+
         setIsNavigating(!isNavigating);
     };
 
     const reachedDestination = (lat, long) => {
-        let reached = false;
-        if (isSamePoint(lat, long, destCoord.latitude, destCoord.longitude)) {
+        if (isSamePoint(lat, long, destCoord.latitude, destCoord.longitude, 0.0009)) {
             console.log("Reached Destination");
 
             setIsNavigating(false);
             setHasArrived(true);
+            destMarkerRef.current.remove();
 
             mapRef.current.getSource(mapSourceId).setData({
                 type: "Feature",
@@ -90,10 +101,16 @@ export default function MapPage() {
                 }
             });
 
+            setAlertMessage("Destination Reached!");
+            setAlertType("success");
 
-            reached = true;
+            setDestCoord("");
+            setDestCoordAvailable(false);
+
+            return (true);
         }
-        return (reached);
+
+        return (false);
     };
     const updateSrcMarker = (lat, long) => {
         if (srcMarkerRef.current) {
@@ -164,7 +181,7 @@ export default function MapPage() {
         };
         // destination marker
         if (!isSamePoint(location.latitude, location.longitude, destCoord.latitude, destCoord.longitude)) {
-            new mapboxgl.Marker({ color: "black" })
+            destMarkerRef.current = new mapboxgl.Marker({ color: "black" })
                 .setLngLat([destCoord.longitude, destCoord.latitude])
                 .addTo(mapRef.current);
         }
@@ -208,9 +225,11 @@ export default function MapPage() {
                 });
                 mapRef.current.fitBounds(bounds, { padding: 60 });
             } catch (err) {
-                console.log(`Some Problem in fetching route : ${err.message}`);
+                console.log(`Failed to fetch route : ${err}`);
                 setRoutes([]);
                 setRoutesAvailable(false);
+                setAlertMessage(err);
+                setAlertType("error");
             }
         });
 
@@ -223,8 +242,35 @@ export default function MapPage() {
         <>
             <div id='map-container' ref={mapContainerRef} style={{ height: "100vh" }} />
 
+            <div className="alerts">
+                <Snackbar
+                    open={hasArrived || alertMessage}
+                    autoHideDuration={5000}
+                    onClose={() => {
+                        setHasArrived(false);
+                        setAlertMessage(null);
+                        setAlertType("");
+                    }}
+                    anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+                >
+                    <Alert severity={alertType} variant="filled" sx={{ width: "100%" }}>
+                        {alertMessage}
+                    </Alert>
+                </Snackbar>
+            </div>
+
             <div className="buttons">
-                <button id="home-btn" className="map-icon-btn home-btn" onClick={() => { router("/home"); }} title="Go Home">
+                <button
+                    id="home-btn"
+                    className="map-icon-btn
+                    home-btn"
+                    onClick={() => {
+                        setDestCoord("");
+                        setDestCoordAvailable(false);
+                        router("/home");
+                    }}
+                    title="Go Home"
+                >
                     <img src="/assets/HomeIcon.png" alt="Home" className="btn-icon" />
                     <span className="btn-label">Home</span>
                 </button>

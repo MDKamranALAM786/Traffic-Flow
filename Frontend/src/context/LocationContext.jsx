@@ -64,6 +64,7 @@ export const LocationProvider = ({ children }) => {
         getLocation
 
     };
+
     return (
         <LocationContext.Provider value={data}>
             {children}
