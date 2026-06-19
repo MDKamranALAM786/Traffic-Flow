@@ -59,6 +59,57 @@ export default function MapPage() {
         return (distance); // distance in km
     };
 
+    // Returns the shortest perpendicular distance (km) from the user's position
+    // to the entire route polyline made of connected [lng, lat] segments.
+    const getDistanceFromRoute = (currentLat, currentLng, routeCoords) => {
+
+        if (!routeCoords || routeCoords.length < 2) return Infinity; // need at least one segment
+
+        let minDistance = Infinity;
+
+        for (let i = 0; i < routeCoords.length - 1; i++) {
+
+            // routeCoords stores [lng, lat] — destructure accordingly
+            const [aLng, aLat] = routeCoords[i];      // segment start A
+            const [bLng, bLat] = routeCoords[i + 1];  // segment end   B
+
+            // Vector AB (direction of the segment)
+            const abLat = bLat - aLat;
+            const abLng = bLng - aLng;
+
+            // Vector AP (from segment start to user position P)
+            const apLat = currentLat - aLat;
+            const apLng = currentLng - aLng;
+
+            const ab2 = abLat * abLat + abLng * abLng; // |AB|² — squared length of segment
+
+            if (ab2 === 0) {
+                // Degenerate segment (A === B): measure to the point directly
+                const d = getDistance(currentLat, currentLng, aLat, aLng);
+                if (d < minDistance) minDistance = d;
+                continue;
+            }
+
+            // t = dot(AP, AB) / |AB|²
+            // Gives how far along AB the perpendicular foot of P lies.
+            // t < 0 → before A,  t > 1 → after B,  0 ≤ t ≤ 1 → on the segment
+            const t = (apLat * abLat + apLng * abLng) / ab2;
+
+            const tClamped = Math.max(0, Math.min(1, t)); // clamp to keep point on segment
+
+            // Coordinates of the closest point on the segment to P
+            const closestLat = aLat + tClamped * abLat;
+            const closestLng = aLng + tClamped * abLng;
+
+            // Haversine distance from P to that closest point
+            const dist = getDistance(currentLat, currentLng, closestLat, closestLng);
+
+            if (dist < minDistance) minDistance = dist;
+        }
+
+        return minDistance; // km
+    };
+
     const reCalculateRoute = async (newLocation) => {
         const route = await callRouteService(newLocation, destCoord);
         setRoutes(route);
@@ -71,6 +122,11 @@ export default function MapPage() {
                 type: "LineString",
                 coordinates: route
             }
+        });
+
+        mapRef.current.flyTo({
+            center: [newLocation.longitude, newLocation.latitude],
+            zoom: 17
         });
     };
 
@@ -124,6 +180,11 @@ export default function MapPage() {
             return;
         }
 
+        mapRef.current.flyTo({
+            center: [location.longitude, location.latitude],
+            zoom: 17
+        });
+
         const watchPositionId = navigator.geolocation.watchPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
@@ -132,20 +193,39 @@ export default function MapPage() {
 
                 const reached = reachedDestination(latitude, longitude);
                 if (!reached) {
-                    const distMoved = getDistance(prevSrcRef.current.lat, prevSrcRef.current.long, latitude, longitude);
-                    if (distMoved > 0.25) {
+
+                    // Pure calculation — local variable only, never put into state,
+                    // so this block causes zero React re-renders.
+                    const distFromRoute = getDistanceFromRoute(latitude, longitude, routes);
+                    const isOffRoute = distFromRoute > 0.05; // 0.05 km = 50 m threshold
+                    console.log(`Off-route: ${isOffRoute} | Distance: ${(distFromRoute * 1000).toFixed(1)} m`);
+
+                    if (isOffRoute) {
                         await reCalculateRoute({ latitude, longitude });
                         prevSrcRef.current = {
                             lat: latitude,
                             long: longitude
                         };
+
+                        setAlertType("warning");
+                        setAlertMessage("You went off route. Recalculating Route...");
+                    } else {
+                        const distMoved = getDistance(prevSrcRef.current.lat, prevSrcRef.current.long, latitude, longitude);
+                        if (distMoved > 0.25) {
+                            await reCalculateRoute({ latitude, longitude });
+                            prevSrcRef.current = {
+                                lat: latitude,
+                                long: longitude
+                            };
+                        }
                     }
-                    console.log("Updated Source Marker");
                 }
                 updateSrcMarker(latitude, longitude);
+                console.log("Updated Source Marker");
             },
             (err) => {
-                console.log(`Some Error while watching position : ${err.message}`);
+                console.log(`Some Error while watching position`);
+                console.log(err);
             }
         );
 
