@@ -1,6 +1,6 @@
-import {Router} from "express";
+import { Router } from "express";
 
-import {registerUser, loginUser} from "../controllers/User.js";
+import { registerUser, loginUser } from "../controllers/User.js";
 
 const router = Router();
 router.route("/signup").post(registerUser);

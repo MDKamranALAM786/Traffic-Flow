@@ -26,9 +26,7 @@ export const callRouteService = async (location, dest) => {
         const routeUrl = `${gatewayUrl}/route?lat1=${latitude}&long1=${longitude}&lat2=${dest.latitude}&long2=${dest.longitude}`;
 
         const res = await axios.get(routeUrl);
-
-        let { route } = res.data.path;
-        return (route);
+        return (res.data.path);
     } catch (err) {
         const errResponse = JSON.parse(err.request.response).message;
         console.log(`Failed to fetch route : ${errResponse}`);

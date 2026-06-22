@@ -18,6 +18,7 @@ export const navigate = async (lat1, long1, lat2, long2) => {
 
         let { route, totalTime } = shortestPath;
 
+        let totalDistance = 0;
         let steps = [];
 
         for (let i = 1; i < route.length; i++) {
@@ -38,6 +39,7 @@ export const navigate = async (lat1, long1, lat2, long2) => {
             let time = Number(result.records[0].get("time"));
             let type = result.records[0].get("type");
 
+            totalDistance += distance;
             let instruction;
             if (type === "highway") {
                 instruction = `Take highway from ${from} to ${to}`;
@@ -60,9 +62,7 @@ export const navigate = async (lat1, long1, lat2, long2) => {
         route = route.map((node) => ([node.longitude, node.latitude]));
         console.log(route);
 
-        let finalPath = { route, steps, totalTime };
-        // console.log(finalPath);
-
+        let finalPath = { route, steps, totalTime, totalDistance };
         return (finalPath);
     } catch (err) {
         console.log(`Error in navigate function : ${err}`);

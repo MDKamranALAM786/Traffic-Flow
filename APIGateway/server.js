@@ -6,8 +6,9 @@ import router from "./routes/route.js";
 
 const app = express();
 
+const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173";
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigin,
     methods: ["GET", "POST"],
     allowedHeaders: ["Content-Type"]
 }));

@@ -22,6 +22,11 @@ export default function MapPage() {
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
 
+    const [eta, setEta] = useState(null);
+    const [etaUnit, setEtaUnit] = useState("mins");
+    const [remainingDist, setRemainingDist] = useState(null);
+    const [distUnit, setDistUnit] = useState("kms");
+
     const [isNavigating, setIsNavigating] = useState(false);
     const [hasArrived, setHasArrived] = useState(false);
 
@@ -110,10 +115,31 @@ export default function MapPage() {
         return minDistance; // km
     };
 
+    const setEtaDist = (time, dist) => {
+        if (time < 1) {
+            const newTime = time * 60;
+            setEta(newTime);
+            setEtaUnit("secs");
+        } else {
+            setEta(time);
+            setEtaUnit("mins");
+        }
+
+        if (dist < 1) {
+            const newDist = dist * 1000;
+            setRemainingDist(newDist);
+            setDistUnit("ms");
+        } else {
+            setRemainingDist(dist);
+            setDistUnit("kms");
+        }
+    };
+
     const reCalculateRoute = async (newLocation) => {
-        const route = await callRouteService(newLocation, destCoord);
+        const { route, totalTime, totalDistance } = await callRouteService(newLocation, destCoord);
         setRoutes(route);
         setRoutesAvailable(true);
+        setEtaDist(totalTime, totalDistance);
 
         mapRef.current.getSource(mapSourceId).setData({
             type: "Feature",
@@ -268,8 +294,9 @@ export default function MapPage() {
 
         mapRef.current.on("load", async () => {
             try {
-                const route = await callRouteService(location, destCoord);
+                const { route, totalTime, totalDistance } = await callRouteService(location, destCoord);
                 console.log(route);
+                setEtaDist(totalTime, totalDistance);
 
                 setRoutes(route);
                 setRoutesAvailable(true);
@@ -321,6 +348,26 @@ export default function MapPage() {
     return (
         <>
             <div id='map-container' ref={mapContainerRef} style={{ height: "100vh" }} />
+
+            {isNavigating && eta !== null && remainingDist !== null && (
+                <div className="nav-dashboard" aria-label="Navigation status">
+                    <div className="nav-dashboard__item">
+                        <span className="nav-dashboard__icon">⏱</span>
+                        <div className="nav-dashboard__info">
+                            <span className="nav-dashboard__value">{Math.round(eta)}</span>
+                            <span className="nav-dashboard__unit">{etaUnit}</span>
+                        </div>
+                    </div>
+                    <div className="nav-dashboard__divider" />
+                    <div className="nav-dashboard__item">
+                        <span className="nav-dashboard__icon">📍</span>
+                        <div className="nav-dashboard__info">
+                            <span className="nav-dashboard__value">{Math.round(remainingDist)}</span>
+                            <span className="nav-dashboard__unit">{distUnit}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="alerts">
                 <Snackbar
