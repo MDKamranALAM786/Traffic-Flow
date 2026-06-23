@@ -1,8 +1,9 @@
-import {Router} from "express";
+import { Router } from "express";
 
-import {registerUser, loginUser} from "../controllers/User.js";
+import { verifyToken, registerUser, loginUser } from "../controllers/User.js";
 
 const router = Router();
+router.route("/verify").get(verifyToken);
 router.route("/signup").post(registerUser);
 router.route("/login").post(loginUser);
 

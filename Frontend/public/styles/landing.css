@@ -1,0 +1,292 @@
+/* ── Container ── */
+.landing-container {
+    height: 100vh;
+    width: 100vw;
+    background-image: linear-gradient(135deg, rgba(10, 10, 26, 0.92) 0%, rgba(18, 18, 48, 0.85) 100%), url("/assets/Dimmer.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* ── Decorative blurs ── */
+.landing-container::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 40vw;
+    height: 40vw;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.15);
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.landing-container::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 35vw;
+    height: 35vw;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.13);
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ── Navbar ── */
+.landing-container .navbar {
+    height: 5rem;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    position: relative;
+    z-index: 1;
+    box-sizing: border-box;
+}
+
+.landing-container .nav-header {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.landing-container .nav-header:hover {
+    transform: scale(1.02);
+}
+
+.landing-container .nav-icon img {
+    height: 4.5rem;
+    width: 6rem;
+    object-fit: contain;
+    margin-right: -0.5rem;
+    filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.8));
+}
+
+.landing-container .nav-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.landing-container .nav-title .traffic {
+    color: #ffffff;
+    margin-right: 0.3rem;
+}
+
+.landing-container .nav-title .flow {
+    color: #3b82f6;
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.landing-container .nav-items {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+/* ── MUI Button overrides ── */
+.landing-container .MuiButton-root {
+    text-transform: none !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    padding: 0.5rem 1.5rem !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.landing-container .nav-item .MuiButton-outlined {
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.landing-container .nav-item .MuiButton-outlined:hover {
+    border-color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.landing-container .nav-item .MuiButton-contained,
+.landing-container .route-btn .MuiButton-contained {
+    background-color: #2563EB !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39) !important;
+}
+
+.landing-container .nav-item .MuiButton-contained:hover {
+    background-color: #1d4ed8 !important;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ── Get Started button ── */
+.landing-container .route-btn .MuiButton-root {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    padding: 0.8rem 2.5rem !important;
+    border-radius: 30px !important;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.4) !important;
+}
+
+.landing-container .route-btn .MuiButton-contained:hover {
+    background-color: #1d4ed8 !important;
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.6) !important;
+}
+
+/* ── Landing content ── */
+.landing-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.contents {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 1200px;
+    gap: 4rem;
+}
+
+/* ── Text content ── */
+.text-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.text-header h1 {
+    font-size: 4rem;
+    line-height: 1.1;
+    font-weight: 800;
+    background: linear-gradient(to right, #ffffff, #93c5fd);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+.text-body p {
+    font-size: 1.25rem;
+    line-height: 1.6;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* ── Globe image ── */
+.image-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeInRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.image-content img {
+    height: 35rem;
+    width: 35rem;
+    object-fit: contain;
+    filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5));
+    animation: float 6s ease-in-out infinite;
+}
+
+/* ── Animations ── */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes fadeUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInRight {
+    0% {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+    .contents {
+        flex-direction: column;
+        text-align: center;
+        gap: 2rem;
+    }
+
+    .text-content {
+        align-items: center;
+    }
+
+    .image-content img {
+        height: 25rem;
+        width: 25rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .landing-container .navbar {
+        padding: 0 2rem;
+    }
+
+    .landing-content {
+        padding: 0 2rem;
+    }
+
+    .text-header h1 {
+        font-size: 2.8rem;
+    }
+
+    .image-content img {
+        height: 18rem;
+        width: 18rem;
+    }
+}
