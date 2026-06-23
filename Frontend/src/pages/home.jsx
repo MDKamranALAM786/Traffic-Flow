@@ -12,7 +12,7 @@ import "../../public/styles/home.css";
 export default function HomePage() {
     const router = useNavigate();
 
-    const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
+    const { isAuthenticated, handleLogout } = useContext(AuthContext);
     const { location, locationAvailable, getLocation, setDestCoord, destCoordAvailable, setDestCoordAvailable } = useContext(LocationContext);
 
     const [dest, setDest] = useState("");
@@ -109,8 +109,6 @@ export default function HomePage() {
     }, [dest, isSelected, locationAvailable]);
 
     useEffect(() => {
-        const token = localStorage.getItem("accessToken");
-        setIsAuthenticated(token ? true : false);
         getLocation();
     }, []);
 

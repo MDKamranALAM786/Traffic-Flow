@@ -9,7 +9,7 @@ import { LocationContext } from "../context/LocationContext.jsx";
 export default function LandingPage() {
     const router = useNavigate();
 
-    const { isAuthenticated, setIsAuthenticated, handleLogout } = useContext(AuthContext);
+    const { isAuthenticated, handleLogout } = useContext(AuthContext);
     const { getLocation } = useContext(LocationContext);
 
     const navigateToAuth = () => {
@@ -20,8 +20,6 @@ export default function LandingPage() {
     };
 
     useEffect(() => {
-        const token = localStorage.getItem("accessToken");
-        setIsAuthenticated(token ? true : false);
         getLocation();
     }, []);
 

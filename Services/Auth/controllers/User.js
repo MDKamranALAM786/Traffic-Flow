@@ -5,6 +5,22 @@ import jwt from "jsonwebtoken";
 
 import { User } from "../models/User.js";
 
+export const verifyToken = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return (res.status(httpStatus.UNAUTHORIZED).json({ message: "Token Missing" }));
+        }
+
+        const token = authHeader.split(" ")[1];
+        const secret = process.env.JWT_SECRET;
+        jwt.verify(token, secret);
+        return (res.status(httpStatus.OK).json({ message: "Token Verified" }));
+    } catch (err) {
+        return (res.status(httpStatus.UNAUTHORIZED).json({ message: "Token Invalid or Expired" }));
+    }
+};
+
 export const registerUser = async (req, res) => {
     try {
         let { name, username, email, password } = req.body;
@@ -36,7 +52,7 @@ export const registerUser = async (req, res) => {
         let token = jwt.sign(
             { userId: newUser._id },
             secret,
-            { expiresIn: "1h" }
+            { expiresIn: "12h" }
         );
         res.status(httpStatus.CREATED).json({ message: "User Registered", token: token });
     } catch (err) {
@@ -63,7 +79,7 @@ export const loginUser = async (req, res) => {
             let token = jwt.sign(
                 { userId: user._id },
                 secret,
-                { expiresIn: "1h" }
+                { expiresIn: "12h" }
             );
             return (res.status(httpStatus.OK).json({ message: "Login Successful", token: token }));
         } else {

@@ -1,19 +1,13 @@
-import axios from "axios";
+import client from "../api/axiosInstance.jsx";
 
 export const callTrafficService = (requireTraffic, location) => {
     const { latitude, longitude } = location;
 
-    const gatewayUrl = import.meta.env.VITE_GATEWAY_URL;
-    const trafficUrl = `${gatewayUrl}/traffic/update`;
-
-    axios.post(
-        trafficUrl,
-        {
-            lat: latitude,
-            long: longitude,
-            traffic: requireTraffic
-        }
-    ).catch((err) => {
+    client.post("/traffic/update", {
+        lat: latitude,
+        long: longitude,
+        traffic: requireTraffic
+    }).catch((err) => {
         console.log(`Error in calling traffic service : ${err.message}`);
     });
 };
@@ -21,11 +15,9 @@ export const callTrafficService = (requireTraffic, location) => {
 export const callRouteService = async (location, dest) => {
     try {
         const { latitude, longitude } = location;
+        const routeUrl = `/route?lat1=${latitude}&long1=${longitude}&lat2=${dest.latitude}&long2=${dest.longitude}`;
 
-        const gatewayUrl = import.meta.env.VITE_GATEWAY_URL;
-        const routeUrl = `${gatewayUrl}/route?lat1=${latitude}&long1=${longitude}&lat2=${dest.latitude}&long2=${dest.longitude}`;
-
-        const res = await axios.get(routeUrl);
+        const res = await client.get(routeUrl);
         return (res.data.path);
     } catch (err) {
         const errResponse = JSON.parse(err.request.response).message;
