@@ -34,7 +34,7 @@ export const getRealTravelTime = async (neighbourPairs, processedEdges, nodeMap,
 
             let node1Pos = nodePos[node1.id];
             let node2Pos = nodePos[node2.id];
-            let travelTime = durations[node1Pos][node2Pos];
+            let travelTime = durations[node1Pos][node2Pos] / 60;
 
             newTravelTimes.push({
                 node1: node1.id,
