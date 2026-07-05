@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     const handleLogin = async (username, password) => {
         try {
             let data = { username, password };
-            let res = await client.post("/auth/login", data);
+            let res = await client.post("/auth/login", data, { skipInterceptor: true });
 
             const accessToken = res.data.token;
             localStorage.setItem("accessToken", accessToken);
@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }) => {
                     return;
                 }
 
-                await client.get("/auth/verify");
+                await client.get("/auth/verify", { skipInterceptor: true });
                 setIsAuthenticated(true);
             } catch (err) {
                 console.log(err.response?.data?.message);

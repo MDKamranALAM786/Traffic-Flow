@@ -332,7 +332,7 @@ export default function MapPage() {
                 });
                 mapRef.current.fitBounds(bounds, { padding: 60 });
             } catch (err) {
-                console.log(`Failed to fetch route : ${err}`);
+                console.log("Failed to fetch route : ", err);
                 setRoutes([]);
                 setRoutesAvailable(false);
                 setAlertMessage(err);

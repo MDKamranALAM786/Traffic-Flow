@@ -8,7 +8,7 @@ export const callTrafficService = (requireTraffic, location) => {
         long: longitude,
         traffic: requireTraffic
     }).catch((err) => {
-        console.log(`Error in calling traffic service : ${err.message}`);
+        console.log(`Error in calling traffic service : ${err.response.data.message}`);
     });
 };
 
