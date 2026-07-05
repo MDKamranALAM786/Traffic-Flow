@@ -26,7 +26,9 @@ client.interceptors.response.use(
         const errStatus = err.response?.status;
         if (errStatus && errStatus === 401) {
             localStorage.removeItem("accessToken");
-            window.location.href("/auth");
+            if (!err.config.skipInterceptor) {
+                window.location.href = "/auth";
+            }
         }
         return (Promise.reject(err));
     }

@@ -211,53 +211,62 @@ export default function MapPage() {
             zoom: 17
         });
 
-        const watchPositionId = navigator.geolocation.watchPosition(
-            async (position) => {
-                const { latitude, longitude } = position.coords;
-                console.log("Watching Position :");
-                console.log(`Latitude : ${latitude}, Longitude : ${longitude}`);
+        let watchPositionId = null;
 
-                const reached = reachedDestination(latitude, longitude);
-                if (!reached) {
+        const startTracking = () => {
+            watchPositionId = navigator.geolocation.watchPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("Watching Position :");
+                    console.log(`Latitude : ${latitude}, Longitude : ${longitude}`);
 
-                    // Pure calculation — local variable only, never put into state,
-                    // so this block causes zero React re-renders.
-                    const distFromRoute = getDistanceFromRoute(latitude, longitude, routes);
-                    const isOffRoute = distFromRoute > 0.05; // 0.05 km = 50 m threshold
-                    console.log(`Off-route: ${isOffRoute} | Distance: ${(distFromRoute * 1000).toFixed(1)} m`);
+                    const reached = reachedDestination(latitude, longitude);
+                    if (!reached) {
 
-                    if (isOffRoute) {
-                        await reCalculateRoute({ latitude, longitude });
-                        prevSrcRef.current = {
-                            lat: latitude,
-                            long: longitude
-                        };
+                        // Pure calculation — local variable only, never put into state,
+                        // so this block causes zero React re-renders.
+                        const distFromRoute = getDistanceFromRoute(latitude, longitude, routes);
+                        const isOffRoute = distFromRoute > 0.05; // 0.05 km = 50 m threshold
+                        console.log(`Off-route: ${isOffRoute} | Distance: ${(distFromRoute * 1000).toFixed(1)} m`);
 
-                        setAlertType("warning");
-                        setAlertMessage("You went off route. Recalculating Route...");
-                    } else {
-                        const distMoved = getDistance(prevSrcRef.current.lat, prevSrcRef.current.long, latitude, longitude);
-                        if (distMoved > 0.25) {
+                        if (isOffRoute) {
                             await reCalculateRoute({ latitude, longitude });
                             prevSrcRef.current = {
                                 lat: latitude,
                                 long: longitude
                             };
+
+                            setAlertType("warning");
+                            setAlertMessage("You went off route. Recalculating Route...");
+                        } else {
+                            const distMoved = getDistance(prevSrcRef.current.lat, prevSrcRef.current.long, latitude, longitude);
+                            if (distMoved > 0.25) {
+                                await reCalculateRoute({ latitude, longitude });
+                                prevSrcRef.current = {
+                                    lat: latitude,
+                                    long: longitude
+                                };
+                            }
                         }
                     }
+                    updateSrcMarker(latitude, longitude);
+                    console.log("Updated Source Marker");
+                },
+                (err) => {
+                    console.log(`Some Error while watching position`);
+                    console.log(err);
                 }
-                updateSrcMarker(latitude, longitude);
-                console.log("Updated Source Marker");
-            },
-            (err) => {
-                console.log(`Some Error while watching position`);
-                console.log(err);
-            }
-        );
+            );
+        };
+
+        mapRef.current.once('moveend', startTracking);
 
         return (() => {
-            navigator.geolocation.clearWatch(watchPositionId);
-            console.log("Cleared Watch Position Id");
+            mapRef.current.off('moveend', startTracking);
+            if (watchPositionId !== null) {
+                navigator.geolocation.clearWatch(watchPositionId);
+                console.log("Cleared Watch Position Id");
+            }
         });
     }, [isNavigating]);
 
@@ -332,7 +341,7 @@ export default function MapPage() {
                 });
                 mapRef.current.fitBounds(bounds, { padding: 60 });
             } catch (err) {
-                console.log(`Failed to fetch route : ${err}`);
+                console.log("Failed to fetch route : ", err);
                 setRoutes([]);
                 setRoutesAvailable(false);
                 setAlertMessage(err);

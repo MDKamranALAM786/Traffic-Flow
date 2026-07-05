@@ -36,7 +36,7 @@ export default function HomePage() {
 
             if (!destCoordAvailable) {
                 const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&access_token=${accessToken}`;
+                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&country=in&bbox=88.1,22.3,88.6,22.8&autocomplete=true&access_token=${accessToken}`;
                 const response = await axios.get(URL);
                 const feature = response.data.features[0];
 
@@ -81,7 +81,7 @@ export default function HomePage() {
         const timer = setTimeout(async () => {
             try {
                 const accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&access_token=${accessToken}`;
+                const URL = `https://api.mapbox.com/search/geocode/v6/forward?q=${encodeURIComponent(dest)}&proximity=${location.longitude}%2C${location.latitude}&country=in&bbox=88.1,22.3,88.6,22.8&autocomplete=true&access_token=${accessToken}`;
                 const results = await axios.get(URL);
                 const suggestions = results.data.features;
 

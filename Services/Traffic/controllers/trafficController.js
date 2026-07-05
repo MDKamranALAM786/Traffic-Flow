@@ -18,6 +18,6 @@ export const changeTrafficHandler = async (req, res) => {
         }
     } catch (err) {
         console.log(`Error : ${err}`);
-        return (res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ message: err.message }));
+        return (res.status(httpStatus.INTERNAL_SERVER_ERROR).json({ err }));
     }
 };

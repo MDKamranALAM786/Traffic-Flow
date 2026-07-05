@@ -52,7 +52,7 @@ export const registerUser = async (req, res) => {
         let token = jwt.sign(
             { userId: newUser._id },
             secret,
-            { expiresIn: "12h" }
+            { expiresIn: "2h" }
         );
         res.status(httpStatus.CREATED).json({ message: "User Registered", token: token });
     } catch (err) {
@@ -61,7 +61,6 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-    console.log("Login Request Received");
     try {
         let { username, password } = req.body;
         if (!username || !password) {
@@ -79,7 +78,7 @@ export const loginUser = async (req, res) => {
             let token = jwt.sign(
                 { userId: user._id },
                 secret,
-                { expiresIn: "12h" }
+                { expiresIn: "2h" }
             );
             return (res.status(httpStatus.OK).json({ message: "Login Successful", token: token }));
         } else {
