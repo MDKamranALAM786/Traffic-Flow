@@ -4,6 +4,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
+import CircularProgress from "@mui/material/CircularProgress";
 
 import "../../public/styles/map.css";
 import { LocationContext } from "../context/LocationContext.jsx";
@@ -21,6 +22,7 @@ export default function MapPage() {
 
     const [routes, setRoutes] = useState([]);
     const [routesAvailable, setRoutesAvailable] = useState(false);
+    const routeRef = useRef([]);
 
     const [eta, setEta] = useState(null);
     const [etaUnit, setEtaUnit] = useState("mins");
@@ -29,6 +31,8 @@ export default function MapPage() {
 
     const [isNavigating, setIsNavigating] = useState(false);
     const [hasArrived, setHasArrived] = useState(false);
+
+    const [findingRoute, setFindingRoute] = useState(false);
 
     const [alertMessage, setAlertMessage] = useState(null);
     const [alertType, setAlertType] = useState("");
@@ -118,17 +122,17 @@ export default function MapPage() {
     const setEtaDist = (time, dist) => {
         if (time < 1) {
             const newTime = time * 60;
-            setEta(newTime);
+            setEta(newTime * 1.5);
             setEtaUnit("secs");
         } else {
-            setEta(time);
+            setEta(time * 1.5);
             setEtaUnit("mins");
         }
 
         if (dist < 1) {
             const newDist = dist * 1000;
             setRemainingDist(newDist);
-            setDistUnit("ms");
+            setDistUnit("meters");
         } else {
             setRemainingDist(dist);
             setDistUnit("kms");
@@ -138,6 +142,7 @@ export default function MapPage() {
     const reCalculateRoute = async (newLocation) => {
         const { route, totalTime, totalDistance } = await callRouteService(newLocation, destCoord);
         setRoutes(route);
+        routeRef.current = route;
         setRoutesAvailable(true);
         setEtaDist(totalTime, totalDistance);
 
@@ -225,7 +230,7 @@ export default function MapPage() {
 
                         // Pure calculation — local variable only, never put into state,
                         // so this block causes zero React re-renders.
-                        const distFromRoute = getDistanceFromRoute(latitude, longitude, routes);
+                        const distFromRoute = getDistanceFromRoute(latitude, longitude, routeRef.current);
                         const isOffRoute = distFromRoute > 0.05; // 0.05 km = 50 m threshold
                         console.log(`Off-route: ${isOffRoute} | Distance: ${(distFromRoute * 1000).toFixed(1)} m`);
 
@@ -267,6 +272,7 @@ export default function MapPage() {
                 navigator.geolocation.clearWatch(watchPositionId);
                 console.log("Cleared Watch Position Id");
             }
+            routeRef.current = [];
         });
     }, [isNavigating]);
 
@@ -302,12 +308,14 @@ export default function MapPage() {
         }
 
         mapRef.current.on("load", async () => {
+            setFindingRoute(true);
             try {
                 const { route, totalTime, totalDistance } = await callRouteService(location, destCoord);
                 console.log(route);
                 setEtaDist(totalTime, totalDistance);
 
                 setRoutes(route);
+                routeRef.current = route;
                 setRoutesAvailable(true);
 
                 const geoJSONObject = {
@@ -340,8 +348,12 @@ export default function MapPage() {
                     bounds.extend(coord);
                 });
                 mapRef.current.fitBounds(bounds, { padding: 60 });
+
+                // LineString is drawn — dismiss the loading snackbar
+                setFindingRoute(false);
             } catch (err) {
                 console.log("Failed to fetch route : ", err);
+                setFindingRoute(false);
                 setRoutes([]);
                 setRoutesAvailable(false);
                 setAlertMessage(err);
@@ -371,7 +383,7 @@ export default function MapPage() {
                     <div className="nav-dashboard__item">
                         <span className="nav-dashboard__icon">📍</span>
                         <div className="nav-dashboard__info">
-                            <span className="nav-dashboard__value">{Math.round(remainingDist)}</span>
+                            <span className="nav-dashboard__value">{remainingDist.toFixed(2)}</span>
                             <span className="nav-dashboard__unit">{distUnit}</span>
                         </div>
                     </div>
@@ -379,8 +391,24 @@ export default function MapPage() {
             )}
 
             <div className="alerts">
+                {/* One-time "Finding Routes" loading snackbar shown only on initial map load */}
                 <Snackbar
-                    open={hasArrived || alertMessage}
+                    open={findingRoute}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert
+                        icon={<CircularProgress size={20} color="inherit" />}
+                        severity="info"
+                        variant="filled"
+                        sx={{ width: "100%", alignItems: "center" }}
+                    >
+                        Finding Routes…
+                    </Alert>
+                </Snackbar>
+
+                {/* General-purpose alert snackbar */}
+                <Snackbar
+                    open={hasArrived || !!alertMessage}
                     autoHideDuration={5000}
                     onClose={() => {
                         setHasArrived(false);
