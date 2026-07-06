@@ -61,7 +61,6 @@ You will need to install dependencies for each service individually.
 ```bash
 cd APIGateway
 npm install
-# Create a .env file based on environment requirements (e.g., PORT=8080, ALLOWED_ORIGIN)
 npm run dev
 ```
 
@@ -69,7 +68,6 @@ npm run dev
 ```bash
 cd Services/Auth
 npm install
-# Create a .env file with ATLASDB_URL, PORT (e.g., 5001), etc.
 npm run dev
 ```
 
@@ -77,7 +75,6 @@ npm run dev
 ```bash
 cd Services/Route
 npm install
-# Create a .env file with Neo4j credentials and PORT
 npm run dev
 ```
 
@@ -85,7 +82,6 @@ npm run dev
 ```bash
 cd Services/Traffic
 npm install
-# Create a .env file with Neo4j credentials, external APIs, and PORT
 npm run dev
 ```
 
@@ -95,7 +91,6 @@ cd Frontend
 npm install
 npm run dev
 ```
-The frontend will typically run on `http://localhost:5173`.
 
 ---
 
